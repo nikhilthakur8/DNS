@@ -1,0 +1,19 @@
+{
+  "name": "dns-server",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "dig": "^0.0.6",
+    "dotenv": "^17.2.2",
+    "mongoose": "^8.18.1",
+    "native-dns": "^0.7.0",
+    "zod": "^4.1.8"
+  }
+}
