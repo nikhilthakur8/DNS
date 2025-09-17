@@ -2,10 +2,16 @@ const mongoose = require("mongoose");
 
 const recordSchema = new mongoose.Schema(
 	{
+		zone: {
+			type: String,
+			required: true,
+			lowercase: true,
+		},
 		name: {
 			type: String,
 			required: true,
 			index: true,
+			lowercase: true,
 		},
 		type: {
 			type: String,
@@ -24,6 +30,8 @@ const recordSchema = new mongoose.Schema(
 	},
 	{ timestamps: true }
 );
+
+recordSchema.index({ zone: 1, name: 1, type: 1 }, { unique: true });
 
 const Record = mongoose.model("Record", recordSchema);
 
