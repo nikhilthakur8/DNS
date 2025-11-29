@@ -20,6 +20,7 @@ async function handleRequest(request, response) {
 					ttl: 600,
 				})
 			);
+			continue;
 		}
 
 		const zone = parts.slice(-2).join(".");
