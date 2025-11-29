@@ -12,6 +12,16 @@ async function handleRequest(request, response) {
 		const parts = q.name.toLowerCase().split(".");
 		if (parts.length < 2) continue;
 
+		if (parts.slice(-3).join(".") === "dns.clouly.in") {
+			response.answer.push(
+				dns.A({
+					name: q.name,
+					address: "80.225.222.130",
+					ttl: 600,
+				})
+			);
+		}
+
 		const zone = parts.slice(-2).join(".");
 		const name = parts.slice(0, -2).join(".") || "@";
 
