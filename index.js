@@ -23,6 +23,18 @@ async function handleRequest(request, response) {
 			continue;
 		}
 
+		if (q.type === dns.consts.NAME_TO_QTYPE.MX) {
+			response.answer.push(
+				dns.MX({
+					name: "clouly.in",
+					priority: 10,
+					exchange: "mail.clouly.in",
+					ttl: 600,
+				})
+			);
+			continue;
+		}
+
 		const zone = parts.slice(-2).join(".");
 		const name = parts.slice(0, -2).join(".") || "@";
 
