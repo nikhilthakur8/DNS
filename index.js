@@ -16,7 +16,7 @@ async function handleRequest(request, response) {
 			response.answer.push(
 				dns.A({
 					name: q.name,
-					address: "80.225.222.130",
+					address: "80.225.203.166",
 					ttl: 600,
 				})
 			);
