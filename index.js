@@ -4,141 +4,157 @@ const Record = require("./models/record.js");
 require("dotenv").config();
 
 connectToMongoDB();
-
 async function handleRequest(request, response) {
-	for (const q of request.question) {
-		console.log(`DNS Query for ${q.name} type ${q.type}`);
-
-		const parts = q.name.toLowerCase().split(".");
-		if (parts.length < 2) continue;
-
-		if (parts.slice(-3).join(".") === "dns.clouly.in") {
-			response.answer.push(
-				dns.A({
-					name: q.name,
-					address: "80.225.203.166",
-					ttl: 600,
-				})
-			);
-			continue;
+	try {
+		if (!request || !Array.isArray(request.question)) {
+			response.send();
+			return;
 		}
 
-		if (q.type === dns.consts.NAME_TO_QTYPE.MX) {
-			response.answer.push(
-				dns.MX({
-					name: "clouly.in",
-					priority: 10,
-					exchange: "mail.clouly.in",
-					ttl: 600,
-				})
-			);
-			continue;
-		}
+		for (const q of request.question) {
+			console.log(`DNS Query for ${q.name} type ${q.type}`);
 
-		const zone = parts.slice(-2).join(".");
-		const name = parts.slice(0, -2).join(".") || "@";
+			const parts = q.name.toLowerCase().split(".");
+			if (parts.length < 2) continue;
 
-		const records = await Record.find({ zone, name });
+			if (parts.slice(-3).join(".") === "dns.clouly.in") {
+				response.answer.push(
+					dns.A({
+						name: q.name,
+						address: "80.225.203.166",
+						ttl: 600,
+					})
+				);
+				continue;
+			}
 
-		if (!records || records.length === 0) continue;
+			if (q.type === dns.consts.NAME_TO_QTYPE.MX) {
+				response.answer.push(
+					dns.MX({
+						name: "clouly.in",
+						priority: 10,
+						exchange: "mail.clouly.in",
+						ttl: 600,
+					})
+				);
+				continue;
+			}
 
-		for (const record of records) {
-			const fqdn = name === "@" ? zone : `${name}.${zone}`;
+			const zone = parts.slice(-2).join(".");
+			const name = parts.slice(0, -2).join(".") || "@";
 
-			switch (record.type) {
-				case "A":
-					if (q.type === dns.consts.NAME_TO_QTYPE.A) {
-						response.answer.push(
-							dns.A({
-								name: fqdn,
-								address: record.content,
-								ttl: record.ttl || 600,
-							})
-						);
-					}
-					break;
+			const records = await Record.find({ zone, name });
+			if (!records || records.length === 0) continue;
 
-				case "AAAA":
-					if (q.type === dns.consts.NAME_TO_QTYPE.AAAA) {
-						response.answer.push(
-							dns.AAAA({
-								name: fqdn,
-								address: record.content,
-								ttl: record.ttl || 600,
-							})
-						);
-					}
-					break;
+			for (const record of records) {
+				const fqdn = name === "@" ? zone : `${name}.${zone}`;
 
-				case "CNAME":
-					if (q.type === dns.consts.NAME_TO_QTYPE.CNAME) {
-						response.answer.push(
-							dns.CNAME({
-								name: fqdn,
-								data: record.content,
-								ttl: record.ttl || 600,
-							})
-						);
-					} else if (
-						q.type === dns.consts.NAME_TO_QTYPE.A ||
-						q.type === dns.consts.NAME_TO_QTYPE.AAAA
-					) {
-						response.answer.push(
-							dns.CNAME({
-								name: fqdn,
-								data: record.content,
-								ttl: record.ttl || 600,
-							})
-						);
+				switch (record.type) {
+					case "A":
+						if (q.type === dns.consts.NAME_TO_QTYPE.A) {
+							response.answer.push(
+								dns.A({
+									name: fqdn,
+									address: record.content,
+									ttl: record.ttl || 600,
+								})
+							);
+						}
+						break;
 
-						const targetRecords = await Record.find({
-							name: record.content.split(".")[0],
-							zone: record.content.split(".").slice(-2).join("."),
-							type: { $in: ["A", "AAAA"] },
-						});
+					case "AAAA":
+						if (q.type === dns.consts.NAME_TO_QTYPE.AAAA) {
+							response.answer.push(
+								dns.AAAA({
+									name: fqdn,
+									address: record.content,
+									ttl: record.ttl || 600,
+								})
+							);
+						}
+						break;
 
-						targetRecords.forEach((t) => {
-							const targetFqdn =
-								t.name === "@" ? t.zone : `${t.name}.${t.zone}`;
-							if (t.type === "A") {
-								response.answer.push(
-									dns.A({
-										name: targetFqdn,
-										address: t.content,
-										ttl: t.ttl || 600,
-									})
-								);
-							} else if (t.type === "AAAA") {
-								response.answer.push(
-									dns.AAAA({
-										name: targetFqdn,
-										address: t.content,
-										ttl: t.ttl || 600,
-									})
-								);
-							}
-						});
-					}
-					break;
-				case "TXT":
-					if (q.type === dns.consts.NAME_TO_QTYPE.TXT) {
-						response.answer.push(
-							dns.TXT({
-								name: fqdn,
-								data: record.content,
-								ttl: record.ttl || 600,
-							})
-						);
-					}
-					break;
+					case "CNAME":
+						if (q.type === dns.consts.NAME_TO_QTYPE.CNAME) {
+							response.answer.push(
+								dns.CNAME({
+									name: fqdn,
+									data: record.content,
+									ttl: record.ttl || 600,
+								})
+							);
+						} else if (
+							q.type === dns.consts.NAME_TO_QTYPE.A ||
+							q.type === dns.consts.NAME_TO_QTYPE.AAAA
+						) {
+							response.answer.push(
+								dns.CNAME({
+									name: fqdn,
+									data: record.content,
+									ttl: record.ttl || 600,
+								})
+							);
 
-				default:
-					break;
+							const targetRecords = await Record.find({
+								name: record.content.split(".")[0],
+								zone: record.content
+									.split(".")
+									.slice(-2)
+									.join("."),
+								type: { $in: ["A", "AAAA"] },
+							});
+
+							targetRecords.forEach((t) => {
+								const targetFqdn =
+									t.name === "@"
+										? t.zone
+										: `${t.name}.${t.zone}`;
+
+								if (t.type === "A") {
+									response.answer.push(
+										dns.A({
+											name: targetFqdn,
+											address: t.content,
+											ttl: t.ttl || 600,
+										})
+									);
+								} else if (t.type === "AAAA") {
+									response.answer.push(
+										dns.AAAA({
+											name: targetFqdn,
+											address: t.content,
+											ttl: t.ttl || 600,
+										})
+									);
+								}
+							});
+						}
+						break;
+
+					case "TXT":
+						if (q.type === dns.consts.NAME_TO_QTYPE.TXT) {
+							response.answer.push(
+								dns.TXT({
+									name: fqdn,
+									data: record.content,
+									ttl: record.ttl || 600,
+								})
+							);
+						}
+						break;
+
+					default:
+						break;
+				}
 			}
 		}
-	}
 
-	response.send();
+		response.send();
+	} catch (e) {
+		try {
+			response.send();
+		} catch (_) {}
+	}
 }
 
 // Create UDP server
